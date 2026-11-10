@@ -1,44 +1,57 @@
-  
-  
+  #include <Wire.h>   // NEW: I2C library for MPU6050 (MPU6050 için I2C kütüphanesi)
+
     // ULTRASONIC DISTANCE SENSOR PINS
     // left
-    const int LEFT_TRIG = 11;
-    const int LEFT_ECHO = 12;
+    const int LEFT_TRIG = 4;    // CHANGED (new wiring, yeni kablolama)
+    const int LEFT_ECHO = 11;   // CHANGED
     // front
     const int FRONT_TRIG = 7;
     const int FRONT_ECHO = 8;
     // right
-    const int RIGHT_TRIG = 4;
-    const int RIGHT_ECHO = 2;
+    const int RIGHT_TRIG = 12;  // CHANGED
+    const int RIGHT_ECHO = 13;  // CHANGED (onboard LED flickers, normal / karttaki LED titrer, normal)
     //Motors
-    const int LEFT_IN1 = 6;
-    const int LEFT_IN2 = 5;
-    const int RIGHT_IN3 = 9;
-    const int RIGHT_IN4 = 10;
-
+    const int LEFT_IN1 = 9;     // CHANGED (IN1 = forward / ileri)
+    const int LEFT_IN2 = 10;    // CHANGED (IN2 = reverse / geri)
+    const int RIGHT_IN3 = 5;    // CHANGED (IN3 = forward / ileri)
+    const int RIGHT_IN4 = 6;    // CHANGED (IN4 = reverse / geri)
+    // NEW: MPU6050 gyro on I2C (A4 = SDA, A5 = SCL)
+    const uint8_t MPU_ADDR = 0x68;
+    // NEW: RESERVED pins - do not use (ayrılmış pinler, kullanma):
+    // 0/1 = HC-05 Bluetooth (Serial), 2/3 = encoders (enkoderler), A4/A5 = MPU6050
+    
     //Last good reading of each sensor (global variables)
     float lastLeft = -1;
     float lastFront = -1;
     float lastRight = -1;
-
     //TUNING
-    const long ECHO_TIMEOUT_US = 25000; // max wait for echo, µs
-    const int MAX_RETIRES = 3;
-    const int RETRY_DELAY_MS = 60; // wait after a failed try
+    const float NO_ECHO_CM = 400.0;   // NEW: no echo after 3 tries = nothing in range (3 denemede yankı yok = menzilde bir şey yok)
+    const long ECHO_TIMEOUT_US = 12000; // max wait for echo, µs
+    const int MAX_RETIRES = 2;
+    const int RETRY_DELAY_MS = 10; // wait after a failed try
     const int SENSOR_GAP_MS = 30;  // wait between sensors
     const float US_PER_CM = 58.0;
-    const int TEST_SPEED = 200; 
+    const int MAX_PWM = 160;     // NEW: motors are 6V-rated, battery ~12V -> never exceed (motorlar 6V'luk, pil ~12V, aşma)
+    const int TEST_SPEED = 140;  // CHANGED: 200 -> 140 (MAX_PWM altında kalsın)
     const int FRONT_STOP_CM = 20;
     const int DRIVE_SPEED = 150;
-    const int TURN_SPEED = 220;
+    const int TURN_SPEED = 160;  // CHANGED: 220 -> 130 (12V'ta 220 fazla)
     const int TURN_90_MS = 400;
     const int OPEN_CM = 30;
     const int CORNER_FWD_MS = 300;   // forward time around left turn (sola dönüş öncesi/sonrası ileri süre)
     const int   TARGET_LEFT_CM = 10;    // desired distance to left wall (sol duvara hedef mesafe)
     const float KP             = 5.0;   // P gain, tune tonight (P katsayısı, akşam ayarlanacak)
     const int   MAX_CORR       = 60;    // max steering correction (en fazla düzeltme)
-    const float LEFT_SCALE = 1.30;
+    const float LEFT_SCALE = 0.90;   // CHANGED: 1.30 -> 1.00, hardware changed, re-tune (donanım değişti, yeniden ayarla)
     const float RIGHT_SCALE = 1.00;
+
+    // NEW: gyro turn tuning (jiroskop dönüş ayarı)
+    const float TURN_STOP_EARLY_DEG = 37.0;      // cut motors this early, inertia finishes the turn (atalet tamamlar)
+    const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
+
+    // NEW: gyro state (jiroskop durumu)
+    bool  mpuOk       = false;   // is MPU6050 connected? (MPU bağlı mı?)
+    float gyroZOffset = 0.0;     // reading at rest, deg/s (dururkenki sapma)
 
     
   /////////////////////////////  1-) SENSORS    /////////////////////////////////////////////////////////
@@ -72,7 +85,8 @@
     float readDistanceOrLast(int trigPin,int echoPin, float &lastValue){
         float flag = readDistance(trigPin,echoPin);
         if (flag == -1){
-          return lastValue;}
+          lastValue = NO_ECHO_CM;   // CHANGED: path is open, forget old wall (yol açık, eski duvarı unut)
+          return NO_ECHO_CM;}
       
         lastValue = flag;
         return flag;}
@@ -96,13 +110,64 @@
     ////////////////////////////////////////////////////////////////////
 
 
+   /////////////////////// NEW: GYRO (MPU6050) ///////////////////////////////////////
+   // Gyro gives ROTATION SPEED (deg/s), not angle (jiroskop açı değil DÖNME HIZI verir)
+   // angle = sum of (speed x time) -> e.g. 90 deg/s for 1 s = 90 degrees
+
+    // Wake up MPU6050, true if found (MPU'yu uyandır, bulunduysa true)
+    bool mpuInit(){
+      Wire.begin();
+      Wire.beginTransmission(MPU_ADDR);
+      Wire.write(0x6B); Wire.write(0x00);          // wake up (uyandır)
+      if (Wire.endTransmission() != 0) return false;
+      Wire.beginTransmission(MPU_ADDR);
+      Wire.write(0x1B); Wire.write(0x00);          // range ±250 deg/s -> 131 units = 1 deg/s
+      return (Wire.endTransmission() == 0);
+      }
+
+    // Raw rotation speed around vertical axis, deg/s (dikey eksende ham dönme hızı)
+    float readGyroZRaw(){
+      Wire.beginTransmission(MPU_ADDR);
+      Wire.write(0x47);                            // GYRO_ZOUT_H register
+      if (Wire.endTransmission(false) != 0) return 0;
+      if (Wire.requestFrom(MPU_ADDR, (uint8_t)2) != 2) return 0;
+      int16_t raw = (Wire.read() << 8) | Wire.read();
+      return raw / 131.0;
+      }
+
+    // Rotation speed with bias removed (sapması çıkarılmış dönme hızı)
+    float readGyroZ(){
+      return readGyroZRaw() - gyroZOffset;
+      }
+
+    // Robot must be STILL: average 500 readings = bias (robot DURURKEN 500 ölçüm ortalaması = sapma)
+    void calibrateGyro(){
+      float sum = 0;
+      for (int i = 0; i < 500; i++){ sum += readGyroZRaw(); delay(2); }
+      gyroZOffset = sum / 500;
+      Serial.print("Gyro offset (deg/s): "); Serial.println(gyroZOffset);
+      }
+
+    // Test: rotate robot BY HAND, prints angle (robotu ELLE çevir, açıyı yazar)
+    void gyroTest(){
+      static float angle = 0;
+      static unsigned long lastUs = micros();
+      unsigned long now = micros();
+      float dt = (now - lastUs) / 1000000.0;       // seconds since last read (son okumadan beri saniye)
+      lastUs = now;
+      angle += readGyroZ() * dt;                   // speed x time added up (hız x zaman toplanır)
+      Serial.print("Angle: "); Serial.println(angle);
+      delay(20);
+      }
+    ////////////////////////////////////////////////////////////////////
+
 
    /////////////////////// 2-) MOTORS ///////////////////////////////////////////////
 
     //setMotor: manage a just one motor 
     void setMotor(int in_x,int in_y, int speed){
 
-      speed=constrain(speed,-255,255);  // keep in range
+      speed=constrain(speed,-MAX_PWM,MAX_PWM);  // keep in range   // CHANGED: -255,255 -> MAX_PWM (6V motorları koru)
       
       if(speed>0){
         analogWrite(in_x,speed); //PWM
@@ -130,6 +195,36 @@
       void stopMotors() {
         drive(0,0);
         }
+
+    // NEW: spin in place until gyro says 'degrees' turned (jiroskop 'degrees' derece diyene kadar dön)
+    // We choose direction with motors, so only HOW MUCH matters -> fabs()
+    // (yönü motorla biz seçiyoruz, sadece NE KADAR döndüğü önemli -> mutlak değer)
+    void turnDegrees(float degrees, bool toRight){
+      stopMotors(); delay(150);
+
+      if (!mpuOk){                                  // no MPU -> old timed turn (MPU yoksa eski süreli dönüş)
+        if (toRight) drive(TURN_SPEED,-TURN_SPEED); else drive(-TURN_SPEED,TURN_SPEED);
+        delay(TURN_90_MS * degrees / 90.0);
+        stopMotors();
+        return;
+        }
+
+      float turned = 0;
+      unsigned long start  = millis();
+      unsigned long lastUs = micros();
+      if (toRight) drive(TURN_SPEED,-TURN_SPEED); else drive(-TURN_SPEED,TURN_SPEED);
+
+      while (fabs(turned) < degrees - TURN_STOP_EARLY_DEG){
+        unsigned long now = micros();
+        float dt = (now - lastUs) / 1000000.0;
+        lastUs = now;
+        turned += readGyroZ() * dt;                 // add speed x time -> angle (hız x zaman -> açı)
+        if (millis() - start > TURN_TIMEOUT_MS) break;   // safety (güvenlik)
+        }
+      stopMotors();
+      delay(150);                                   // let chassis settle (şasi otursun)
+      Serial.print("Turned (deg): "); Serial.println(fabs(turned));
+      }
 
     void motorTest(){
       
@@ -170,12 +265,9 @@
 
      // If there is an obstacle forward change your angle
      if(front_distance < FRONT_STOP_CM){
-      stopMotors();
-      delay(100);
-        if   (left_distance > right_distance){ drive(-TURN_SPEED,TURN_SPEED);} 
-        else                                 { drive(TURN_SPEED,-TURN_SPEED);}
-      delay(TURN_90_MS);
-      stopMotors();
+        // CHANGED: timed spin -> gyro turn (süreli dönüş yerine jiroskopla dönüş)
+        if   (left_distance > right_distance){ turnDegrees(90, false);}   // left (sola)
+        else                                 { turnDegrees(90, true);}    // right (sağa)
       return;
       }
 
@@ -185,11 +277,7 @@
       }
 
      void turnRight90(){
-      stopMotors();
-      delay(200);    
-      drive(TURN_SPEED,-TURN_SPEED);
-      delay(TURN_90_MS);
-      stopMotors();
+      turnDegrees(90, true);   // CHANGED: gyro turn instead of delay (delay yerine jiroskop)
       }
 
       void turnLeftCorner(){
@@ -200,10 +288,7 @@
         delay(100);
 
         //spin left
-        drive(-TURN_SPEED,TURN_SPEED);
-        delay(TURN_90_MS);
-        stopMotors();
-        delay(100);
+        turnDegrees(90, false);   // CHANGED: gyro turn instead of delay (delay yerine jiroskop)
 
          // 3) into new corridor (yeni koridora gir)
         drive(DRIVE_SPEED,DRIVE_SPEED);
@@ -280,7 +365,7 @@ void keepDistance(){
     
   void setup() {
     Serial.begin(9600); // 9600bit data transfer speed
-    //Arduino’ya sinyal geliyorsa INPUT, Arduino sinyal yolluyorsa OUTPUT
+    //Arduino'ya sinyal geliyorsa INPUT, Arduino sinyal yolluyorsa OUTPUT
     pinMode(LEFT_TRIG,OUTPUT);
     pinMode(LEFT_ECHO,INPUT);
     pinMode(FRONT_TRIG,OUTPUT);
@@ -292,40 +377,29 @@ void keepDistance(){
     pinMode(RIGHT_IN3,OUTPUT);
     pinMode(RIGHT_IN4,OUTPUT);
     stopMotors();
-    
+
+    // NEW: restart marker + gyro setup (yeniden başlama işareti + jiroskop kurulumu)
+    Serial.println("=== RESET ===");
+    mpuOk = mpuInit();
+    if (mpuOk){
+      Serial.println("MPU6050 OK - keep robot still (robotu kıpırdatma)");
+      delay(500);
+      calibrateGyro();
+      }
+    else {
+      Serial.println("MPU6050 NOT FOUND - timed turns (MPU yok, süreyle dönülecek)");
+      }
     }
   
   void loop() {
    //printSensors();
    //delay(200);
+   //gyroTest();          // NEW: rotate robot by hand (robotu elle çevir)
    //motorTest();
-   // avoidObstacles();
+    avoidObstacles();
    // followLeftWall();
    //forwardBackwardTest();
    //turnRight90();
-     keepDistance();
-  delay(50);
+   //  keepDistance();
+  //delay(5000);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
