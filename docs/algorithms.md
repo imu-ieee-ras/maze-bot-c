@@ -16,6 +16,8 @@
 **Pros**: It finds the shortest path (BFS).
 **Cons**: It takes a lot of memory and a prior knowledge of the maze
 
+
+## Comparison Table
   | Feature | Wall Follower | Tremaux's Algorithm | Flood Fill |
 | :--- | :--- | :--- | :--- |
 | **Handles Loops / Islands** | No | Yes | Yes |
