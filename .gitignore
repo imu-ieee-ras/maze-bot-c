@@ -66,3 +66,7 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+.venv/
+__pycache__/
+*.pyc
+tools/mazebot-cli/logs/
