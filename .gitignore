@@ -68,3 +68,7 @@ Testing/
 .cache/
 #PlatformIO build output (Derleme çıktıları repoya girmesin)
 .pio/
+.venv/
+__pycache__/
+*.pyc
+tools/mazebot-cli/logs/
