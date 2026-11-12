@@ -66,6 +66,8 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+#PlatformIO build output (Derleme çıktıları repoya girmesin)
+.pio/
 .venv/
 __pycache__/
 *.pyc
