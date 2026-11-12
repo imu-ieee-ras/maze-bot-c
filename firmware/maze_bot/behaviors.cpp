@@ -2,6 +2,7 @@
 #include "config.h"
 #include "sensors.h"
 #include "motors.h"
+#include "telemetry.h"
 
     //Last good reading of each sensor (global variables)
     float lastLeft = -1;
@@ -28,13 +29,18 @@
      // If there is an obstacle forward change your angle
      if(front_distance < FRONT_STOP_CM){
         // CHANGED: timed spin -> gyro turn (süreli dönüş yerine jiroskopla dönüş)
-        if   (left_distance > right_distance){ turnDegrees(90, false);}   // left (sola)
-        else                                 { turnDegrees(90, true);}    // right (sağa)
+        if   (left_distance > right_distance){
+          sendTelemetry(left_distance, front_distance, right_distance, "TURN_L");
+          turnDegrees(90, false);}   // left (sola)
+        else                                 {
+          sendTelemetry(left_distance, front_distance, right_distance, "TURN_R");
+          turnDegrees(90, true);}    // right (sağa)
       return;
       }
 
         // 3) If path clear go forward 
         drive(DRIVE_SPEED, DRIVE_SPEED);
+        sendTelemetry(left_distance, front_distance, right_distance, "FWD");
        
       }
 
@@ -69,7 +75,9 @@
     // Keep distance from obstacle in front (öndeki engelle mesafeyi koru)
 void keepDistance(){
   float front = readDistanceOrLast(FRONT_TRIG, FRONT_ECHO, lastFront);
+#if 0
   Serial.println(front);
+#endif
 
   if (front == -1)       { stopMotors(); }
   else if (front < 12)   {

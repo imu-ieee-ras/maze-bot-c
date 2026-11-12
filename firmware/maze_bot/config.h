@@ -47,4 +47,6 @@
     // NEW: gyro turn tuning (jiroskop dönüş ayarı)
     const float TURN_STOP_EARLY_DEG = 37.0;      // cut motors this early, inertia finishes the turn (atalet tamamlar)
     const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
+
+const bool TELEMETRY_TEST_MODE = true;
 #endif

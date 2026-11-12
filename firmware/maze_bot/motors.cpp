@@ -63,5 +63,7 @@
         }
       stopMotors();
       delay(150);                                   // let chassis settle (şasi otursun)
+#if 0
       Serial.print("Turned (deg): "); Serial.println(fabs(turned));
+#endif
       }

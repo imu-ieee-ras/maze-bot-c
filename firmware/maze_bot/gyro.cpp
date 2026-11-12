@@ -41,7 +41,9 @@
       float sum = 0;
       for (int i = 0; i < 500; i++){ sum += readGyroZRaw(); delay(2); }
       gyroZOffset = sum / 500;
+#if 0
       Serial.print("Gyro offset (deg/s): "); Serial.println(gyroZOffset);
+#endif
       }
 
     // Test: rotate robot BY HAND, prints angle (robotu ELLE çevir, açıyı yazar)
@@ -52,7 +54,9 @@
       float dt = (now - lastUs) / 1000000.0;       // seconds since last read (son okumadan beri saniye)
       lastUs = now;
       angle += readGyroZ() * dt;                   // speed x time added up (hız x zaman toplanır)
+#if 0
       Serial.print("Angle: "); Serial.println(angle);
+#endif
       delay(20);
       }
     ////////////////////////////////////////////////////////////////////
