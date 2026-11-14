@@ -13,6 +13,7 @@
     // Wake up MPU6050, true if found (MPU'yu uyandır, bulunduysa true)
     bool mpuInit(){
       Wire.begin();
+      Wire.setWireTimeout(3000,true); //give up if I2C hangs > 3ms
       Wire.beginTransmission(MPU_ADDR);
 
       Wire.write(0x6B); Wire.write(0x00);//1st byte which register,second byte 
@@ -21,7 +22,7 @@
       if (Wire.endTransmission() != 0) return false;
       
       Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x1B); Wire.write(0x00);//range ±250 deg/s -> 131 units = 1 deg/s
+      Wire.write(0x1B); Wire.write(0x08); //Gyro_Config +-500 deg/s; 1s=65.5 units
       return (Wire.endTransmission() == 0);
       }
 
@@ -32,12 +33,12 @@
       if (Wire.endTransmission(false) != 0) return 0;
       if (Wire.requestFrom(MPU_ADDR, (uint8_t)2) != 2) return 0;
       int16_t raw = (Wire.read() << 8) | Wire.read();
-      return raw / 131.0;
+      return raw / 65.5; //1deg/s = 65.5 units in +-500range
       }
 
     // Rotation speed with bias removed (sapması çıkarılmış dönme hızı)
     float readGyroZ(){
-      return readGyroZRaw() - gyroZOffset;
+	return readGyroZRaw() - gyroZOffset;
       }
 
     // Robot must be STILL: average 500 readings = bias (robot DURURKEN 500 ölçüm ortalaması = sapma)
