@@ -14,10 +14,14 @@
     bool mpuInit(){
       Wire.begin();
       Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x6B); Wire.write(0x00);          // wake up (uyandır)
+
+      Wire.write(0x6B); Wire.write(0x00);//1st byte which register,second byte 
+      // value to write(also 1 byte) wake up (uyandır)
+      
       if (Wire.endTransmission() != 0) return false;
+      
       Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x1B); Wire.write(0x00);          // range ±250 deg/s -> 131 units = 1 deg/s
+      Wire.write(0x1B); Wire.write(0x00);//range ±250 deg/s -> 131 units = 1 deg/s
       return (Wire.endTransmission() == 0);
       }
 
