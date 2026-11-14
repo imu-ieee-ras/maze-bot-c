@@ -32,7 +32,9 @@
       Wire.write(0x47);                            // GYRO_ZOUT_H register
       if (Wire.endTransmission(false) != 0) return 0;
       if (Wire.requestFrom(MPU_ADDR, (uint8_t)2) != 2) return 0;
-      int16_t raw = (Wire.read() << 8) | Wire.read();
+      uint8_t high = Wire.read(); //1st byte high
+      uint8_t low = Wire.read(); //2nd byte Low
+      int16_t raw = (high << 8) | low; //join 00000011+01000100
       return raw / 65.5; //1deg/s = 65.5 units in +-500range
       }
 
