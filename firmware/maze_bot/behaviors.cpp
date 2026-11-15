@@ -34,7 +34,7 @@
       }
 
         // 3) If path clear go forward 
-        drive(DRIVE_SPEED, DRIVE_SPEED);
+    driveStraight(); //Maintain heading using gyro 
        
       }
 
