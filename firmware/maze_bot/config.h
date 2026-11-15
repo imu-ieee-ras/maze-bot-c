@@ -45,6 +45,7 @@
     const float RIGHT_SCALE = 1.00;
 
     // NEW: gyro turn tuning (jiroskop dönüş ayarı)
+    const float SLOW_ZONE_DEG   = 20.0;  // last degrees of a turn done slowly (dönüşün son kaç derecesi yavaş)
     const int   TURN_SLOW_SPEED = 100;   // slow turn PWM, tune on floor (yavaş dönüş hızı, zeminde ayarlanacak)
     const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
     #endif
