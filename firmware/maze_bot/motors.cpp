@@ -49,19 +49,45 @@
         return;
         }
 
-      float turned = 0;
-      unsigned long start  = millis();
-      unsigned long lastUs = micros();
-      if (toRight) drive(TURN_SPEED,-TURN_SPEED); else drive(-TURN_SPEED,TURN_SPEED);
+      resetHeading(); // count this turn from 0 (bu dönüşü 0'dan say)
+      unsigned long start = millis();    // for timeout (zaman aşımı için)
 
-      while (fabs(turned) < degrees - TURN_STOP_EARLY_DEG){
-        unsigned long now = micros();
-        float dt = (now - lastUs) / 1000000.0;
-        lastUs = now;
-        turned += readGyroZ() * dt;                 // add speed x time -> angle (hız x zaman -> açı)
-        if (millis() - start > TURN_TIMEOUT_MS) break;   // safety (güvenlik)
+      while (fabs(heading) < degrees){                  // until full angle (tam açıya kadar)
+        updateHeading();                                // update direction (yönü güncelle)
+        int speed = TURN_SPEED;                         // fast by default (varsayılan hızlı)
+        if (fabs(heading) > degrees - SLOW_ZONE_DEG) speed = TURN_SLOW_SPEED;  // last 20 deg slow (son 20° yavaş)
+        if (toRight) drive(speed, -speed); else drive(-speed, speed);         // turn (dön)
+        if (millis() - start > TURN_TIMEOUT_MS) break;  // safety (güvenlik)
         }
       stopMotors();
       delay(150);                                   // let chassis settle (şasi otursun)
-      Serial.print("Turned (deg): "); Serial.println(fabs(turned));
+      Serial.print("Turned (deg): "); Serial.println(fabs(heading));
+      resetHeading();
       }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
