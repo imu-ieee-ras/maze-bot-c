@@ -33,7 +33,7 @@
     const int MAX_PWM = 160;     // NEW: motors are 6V-rated, battery ~12V -> never exceed (motorlar 6V'luk, pil ~12V, aşma)
     const int TEST_SPEED = 140;  // CHANGED: 200 -> 140 (MAX_PWM altında kalsın)
     const int FRONT_STOP_CM = 20;
-    const int DRIVE_SPEED = 150;
+    const int DRIVE_SPEED = 135;
     const int TURN_SPEED = 120;  // CHANGED: 220 -> 130 (12V'ta 220 fazla)
     const int TURN_90_MS = 400;
     const int OPEN_CM = 30;
@@ -41,8 +41,8 @@
     const int   TARGET_LEFT_CM = 10;    // desired distance to left wall (sol duvara hedef mesafe)
     const float KP             = 5.0;   // P gain, tune tonight (P katsayısı, akşam ayarlanacak)
     const int   MAX_CORR       = 60;    // max steering correction (en fazla düzeltme)
-    const float LEFT_SCALE = 0.90;   // CHANGED: 1.30 -> 1.00, hardware changed, re-tune (donanım değişti, yeniden ayarla)
-    const float RIGHT_SCALE = 1.00;
+    const float LEFT_SCALE = 1.0;   // CHANGED: 1.30 -> 1.00, hardware changed, re-tune (donanım değişti, yeniden ayarla)
+    const float RIGHT_SCALE = 1.0;
 
     // NEW: gyro turn tuning (jiroskop dönüş ayarı)
     const int   TURN_MIN_SPEED     = 75;   // slowest PWM that still turns robot (robotu döndüren en düşük hız)
@@ -50,4 +50,6 @@
     const float TURN_KP            = 1.0;  // extra PWM per degree left (kalan her derece için ek hız)
     const float TURN_TOLERANCE_DEG = 2.0;  // close enough to target (hedefe bu kadar yakınsa tamam)
     const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
-    #endif
+    const float HEADING_KP = 5.0; //Yön düzeltme katsayısı
+
+#endif

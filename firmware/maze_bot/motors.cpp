@@ -31,6 +31,20 @@
       setMotor(RIGHT_IN3, RIGHT_IN4, rightSpeed * RIGHT_SCALE); 
       }
 
+    // Drive straight using gyro feedback (jiroskopla düz git)
+void driveStraight() {
+    updateHeading();  // Update current heading (güncel yönü hesapla)
+
+    float error = 0.0 - heading;  // Target is 0 degrees (hedef 0 derece)
+    float correction = HEADING_KP * error;  // Calculate correction (düzeltmeyi hesapla)
+
+    correction = constrain(correction, -MAX_CORR, MAX_CORR);
+
+    int leftSpeed = DRIVE_SPEED - correction;
+    int rightSpeed = DRIVE_SPEED + correction;
+
+    drive(leftSpeed, rightSpeed);
+}
       // Stop both motors
       void stopMotors() {
         drive(0,0);

@@ -28,6 +28,7 @@
       Serial.println("MPU6050 OK - keep robot still (robotu kıpırdatma)");
       delay(500);
       calibrateGyro();
+      resetHeading();
       }
     else {
       Serial.println("MPU6050 NOT FOUND - timed turns (MPU yok, süreyle dönülecek)");
@@ -35,14 +36,15 @@
     }
   
   void loop() {
+   //delay(5000);
    //printSensors();
    //delay(200);
    //gyroTest();          // NEW: rotate robot by hand (robotu elle çevir)
    //motorTest();
-    avoidObstacles();
-   // followLeftWall();
+   avoidObstacles();
+   //followLeftWall();
    //forwardBackwardTest();
    //turnRight90();
-   //  keepDistance();
-  //delay(5000);
+   //keepDistance();
+   //delay(5000);
   }
