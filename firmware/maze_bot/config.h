@@ -34,7 +34,7 @@
     const int TEST_SPEED = 140;  // CHANGED: 200 -> 140 (MAX_PWM altında kalsın)
     const int FRONT_STOP_CM = 20;
     const int DRIVE_SPEED = 150;
-    const int TURN_SPEED = 160;  // CHANGED: 220 -> 130 (12V'ta 220 fazla)
+    const int TURN_SPEED = 120;  // CHANGED: 220 -> 130 (12V'ta 220 fazla)
     const int TURN_90_MS = 400;
     const int OPEN_CM = 30;
     const int CORNER_FWD_MS = 300;   // forward time around left turn (sola dönüş öncesi/sonrası ileri süre)
@@ -45,7 +45,9 @@
     const float RIGHT_SCALE = 1.00;
 
     // NEW: gyro turn tuning (jiroskop dönüş ayarı)
-    const float SLOW_ZONE_DEG   = 20.0;  // last degrees of a turn done slowly (dönüşün son kaç derecesi yavaş)
-    const int   TURN_SLOW_SPEED = 100;   // slow turn PWM, tune on floor (yavaş dönüş hızı, zeminde ayarlanacak)
+    const int   TURN_MIN_SPEED     = 75;   // slowest PWM that still turns robot (robotu döndüren en düşük hız)
+
+    const float TURN_KP            = 1.0;  // extra PWM per degree left (kalan her derece için ek hız)
+    const float TURN_TOLERANCE_DEG = 2.0;  // close enough to target (hedefe bu kadar yakınsa tamam)
     const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
     #endif

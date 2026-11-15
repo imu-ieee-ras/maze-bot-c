@@ -36,6 +36,12 @@
         drive(0,0);
         }
 
+    // Active brake: both inputs HIGH -> motor stops fast (aktif fren: iki giriş HIGH -> motor hızla durur)
+    void brakeMotors(){
+      digitalWrite(LEFT_IN1, HIGH);  digitalWrite(LEFT_IN2, HIGH);
+      digitalWrite(RIGHT_IN3, HIGH); digitalWrite(RIGHT_IN4, HIGH);
+    }
+
     // NEW: spin in place until gyro says 'degrees' turned (jiroskop 'degrees' derece diyene kadar dön)
     // We choose direction with motors, so only HOW MUCH matters -> fabs()
     // (yönü motorla biz seçiyoruz, sadece NE KADAR döndüğü önemli -> mutlak değer)
@@ -49,21 +55,29 @@
         return;
         }
 
-      resetHeading(); // count this turn from 0 (bu dönüşü 0'dan say)
-      unsigned long start = millis();    // for timeout (zaman aşımı için)
+  float target = toRight ? -degrees : degrees;     // right = minus, left = plus (sağ eksi, sol artı)
+  resetHeading();                                  // count from 0 (0'dan say)
+  unsigned long start = millis();                  // for timeout (zaman aşımı için)
 
-      while (fabs(heading) < degrees){                  // until full angle (tam açıya kadar)
-        updateHeading();                                // update direction (yönü güncelle)
-        int speed = TURN_SPEED;                         // fast by default (varsayılan hızlı)
-        if (fabs(heading) > degrees - SLOW_ZONE_DEG) speed = TURN_SLOW_SPEED;  // last 20 deg slow (son 20° yavaş)
-        if (toRight) drive(speed, -speed); else drive(-speed, speed);         // turn (dön)
-        if (millis() - start > TURN_TIMEOUT_MS) break;  // safety (güvenlik)
-        }
-      stopMotors();
-      delay(150);                                   // let chassis settle (şasi otursun)
-      Serial.print("Turned (deg): "); Serial.println(fabs(heading));
-      resetHeading();
-      }
+  while (millis() - start < TURN_TIMEOUT_MS){
+    updateHeading();                               // update direction (yönü güncelle)
+    float error = target - heading;                // degrees left, sign = direction (kalan açı)
+
+    if (fabs(error) < TURN_TOLERANCE_DEG){         // close enough (yeterince yakın)
+      brakeMotors();                               // brake (fren)
+      if (fabs(readGyroZ()) < 5.0) break;          // really stopped -> done (gerçekten durduysa bitti)
+      continue;                                    // still sliding -> keep checking (kayıyorsa izle)
+    }
+
+    int speed = TURN_MIN_SPEED + TURN_KP * fabs(error);   // far = fast, near = slow (uzak hızlı, yakın yavaş)
+    if (speed > TURN_SPEED) speed = TURN_SPEED;           // limit (sınırla)
+    if (error > 0) drive(-speed, speed);           // need more left (sola dön)
+    else           drive(speed, -speed);           // need more right or passed target (sağa dön / geri düzelt)
+  }
+  stopMotors();
+  Serial.print("Turned (deg): "); Serial.println(fabs(heading));
+  resetHeading();                                  // new corridor = 0 (yeni koridor = 0)
+  }
 
 
 
