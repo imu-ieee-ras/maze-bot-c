@@ -24,6 +24,7 @@
      // 1-) If sensors couldnt measure stop motors
      if( left_distance == -1 || front_distance == -1 || right_distance == -1){
      stopMotors();
+     sendTelemetry(left_distance, front_distance, right_distance, "STOP");
      return;}
 
      // If there is an obstacle forward change your angle

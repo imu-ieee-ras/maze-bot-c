@@ -53,6 +53,6 @@
     const float HEADING_KP = 5.0; //Yön düzeltme katsayısı
 
     // true: stationary telemetry test; false: normal gyro-controlled driving.
-    const bool TELEMETRY_TEST_MODE = true;
+    const bool TELEMETRY_TEST_MODE = false;
 
 #endif
