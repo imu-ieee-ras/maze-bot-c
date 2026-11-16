@@ -52,4 +52,7 @@
     const unsigned long TURN_TIMEOUT_MS = 4000; // safety: give up if turn takes too long (güvenlik)
     const float HEADING_KP = 5.0; //Yön düzeltme katsayısı
 
+    // true: stationary telemetry test; false: normal gyro-controlled driving.
+    const bool TELEMETRY_TEST_MODE = false;
+
 #endif

@@ -89,7 +89,9 @@ void driveStraight() {
     else           drive(speed, -speed);           // need more right or passed target (sağa dön / geri düzelt)
   }
   stopMotors();
+#if 0
   Serial.print("Turned (deg): "); Serial.println(fabs(heading));
+#endif
   resetHeading();                                  // new corridor = 0 (yeni koridor = 0)
   }
 

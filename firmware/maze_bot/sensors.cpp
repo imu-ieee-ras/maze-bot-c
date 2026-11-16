@@ -50,8 +50,10 @@
       delay(SENSOR_GAP_MS);
       float right = readDistance(RIGHT_TRIG,RIGHT_ECHO);
 
+#if 0
       Serial.print("L: ");      Serial.print(left);
       Serial.print("F: ");      Serial.print(front);
       Serial.print("R: ");      Serial.println(right);
+#endif
       }
     ////////////////////////////////////////////////////////////////////
