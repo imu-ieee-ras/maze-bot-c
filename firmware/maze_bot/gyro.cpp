@@ -13,11 +13,16 @@
     // Wake up MPU6050, true if found (MPU'yu uyandır, bulunduysa true)
     bool mpuInit(){
       Wire.begin();
+      Wire.setWireTimeout(3000,true); //give up if I2C hangs > 3ms
       Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x6B); Wire.write(0x00);          // wake up (uyandır)
+
+      Wire.write(0x6B); Wire.write(0x00);//1st byte which register,second byte 
+      // value to write(also 1 byte) wake up (uyandır)
+      
       if (Wire.endTransmission() != 0) return false;
+      
       Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x1B); Wire.write(0x00);          // range ±250 deg/s -> 131 units = 1 deg/s
+      Wire.write(0x1B); Wire.write(0x08); //Gyro_Config +-500 deg/s; 1s=65.5 units
       return (Wire.endTransmission() == 0);
       }
 
@@ -27,13 +32,15 @@
       Wire.write(0x47);                            // GYRO_ZOUT_H register
       if (Wire.endTransmission(false) != 0) return 0;
       if (Wire.requestFrom(MPU_ADDR, (uint8_t)2) != 2) return 0;
-      int16_t raw = (Wire.read() << 8) | Wire.read();
-      return raw / 131.0;
+      uint8_t high = Wire.read(); //1st byte high
+      uint8_t low = Wire.read(); //2nd byte Low
+      int16_t raw = (high << 8) | low; //join 00000011+01000100
+      return raw / 65.5; //1deg/s = 65.5 units in +-500range
       }
 
     // Rotation speed with bias removed (sapması çıkarılmış dönme hızı)
     float readGyroZ(){
-      return readGyroZRaw() - gyroZOffset;
+	return readGyroZRaw() - gyroZOffset;
       }
 
     // Robot must be STILL: average 500 readings = bias (robot DURURKEN 500 ölçüm ortalaması = sapma)
@@ -59,4 +66,44 @@
 #endif
       delay(20);
       }
+
+      float heading =0.0; //robot direction left:+ , right:-
+      unsigned long headingLastUs = 0; //time of last update	
+      void resetHeading(){
+	  heading = 0.0;              // 🟨 total = 0 (toplam yön = 0)
+	  headingLastUs = micros();   // 🟦 last look time = now (en son bakış saati = şimdi)
+	}
+	// One notebook row: add speed x time to heading (defterin bir satırı)
+	void updateHeading(){
+  	unsigned long now = micros();                   // 1. what time is it (saat kaç)
+  	float dt = (now - headingLastUs) / 1000000.0;   // 2. seconds passed (geçen süre)
+  	headingLastUs = now;                            // 3. write the time (saati deftere yaz)
+	  heading += readGyroZ() * dt;                    // 4. speed x time to total (toplama ekle)
+	}
     ////////////////////////////////////////////////////////////////////
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -39,8 +39,8 @@
       }
 
         // 3) If path clear go forward 
-        drive(DRIVE_SPEED, DRIVE_SPEED);
-        sendTelemetry(left_distance, front_distance, right_distance, "FWD");
+    driveStraight(); //Maintain heading using gyro 
+    sendTelemetry(left_distance, front_distance, right_distance, "FWD");
        
       }
 

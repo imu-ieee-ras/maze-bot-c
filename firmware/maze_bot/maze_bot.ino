@@ -34,6 +34,7 @@
 #endif
       delay(500);
       calibrateGyro();
+      resetHeading();
       }
     else {
 #if 0
@@ -47,14 +48,15 @@
       telemetryOnlyTest();
       return;
     }
+   //delay(5000);
    //printSensors();
    //delay(200);
    //gyroTest();          // NEW: rotate robot by hand (robotu elle çevir)
    //motorTest();
-    avoidObstacles();
-   // followLeftWall();
+   avoidObstacles();
+   //followLeftWall();
    //forwardBackwardTest();
    //turnRight90();
-   //  keepDistance();
-  //delay(5000);
+   //keepDistance();
+   //delay(5000);
   }
